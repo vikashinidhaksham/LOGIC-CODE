@@ -1,0 +1,102 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
+
+int main() {
+    int sd, b, l, ac, len;
+    struct sockaddr_in server, client;
+
+    server.sin_family = AF_INET;
+    server.sin_port = htons(5666);
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sd < 0) {
+        printf("Socket creation failed");
+        exit(1); }
+    printf("Socket created\n");
+
+    b = bind(sd, (struct sockaddr*)&server, sizeof(server));
+    if (b < 0) { printf("Bind failed"); exit(1); }
+    printf(" Bind successful\n");
+
+    l = listen(sd, 5);
+    if (l < 0) { printf("Listen failed"); exit(1); }
+
+    len = sizeof(client);
+    ac = accept(sd, (struct sockaddr*)&client, &len);
+    if (ac < 0) { printf("Accept failed"); exit(1); }
+
+    int T;
+    recv(ac, &T, sizeof(T), 0);
+    int t;
+    for (t = 0; t < T; t++) {
+        int c, p, r, d, k;
+        recv(ac, &c, sizeof(c), 0);
+        recv(ac, &p, sizeof(p), 0);
+        recv(ac, &r, sizeof(r), 0);
+
+        d = c * 10;
+        if (p <= d)
+            k = p * r;
+        else
+            k = d * r;
+
+        send(ac, &k, sizeof(k), 0);
+
+    }
+
+    close(ac);
+    close(sd);
+    return 0;
+}
+
+[23bit099@mepcolinux tcp]$cat revc1.c
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
+
+int main() {
+    int sd, c, len;
+    struct sockaddr_in server;
+
+    server.sin_family = AF_INET;
+    server.sin_port = htons(5666);
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sd < 0) { printf("Socket creation failed"); exit(1); }
+    printf("Socket created\n");
+
+    len = sizeof(server);
+    c = connect(sd, (struct sockaddr*)&server, len);
+    if (c < 0) { printf("Connection failed"); exit(1); }
+
+    int T;
+    printf("Enter number of test cases: ");
+    scanf("%d", &T);
+    send(sd, &T, sizeof(T), 0);
+    int t;
+    for (t = 0; t < T; t++) {
+        int c, p, r, result;
+        printf("Enter capacity, people, rupees: ");
+        scanf("%d %d %d", &c, &p, &r);
+        send(sd, &c, sizeof(c), 0);
+        send(sd, &p, sizeof(p), 0);
+        send(sd, &r, sizeof(r), 0);
+
+        recv(sd, &result, sizeof(result), 0);
+        printf("Result: %d\n", result);
+    }
+
+    close(sd);
+    return 0;
+}
